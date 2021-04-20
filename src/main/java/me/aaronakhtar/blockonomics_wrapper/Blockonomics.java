@@ -1,20 +1,18 @@
 package me.aaronakhtar.blockonomics_wrapper;
 
 import com.google.gson.JsonObject;
+import me.aaronakhtar.blockonomics_wrapper.exceptions.BlockonomicsException;
 import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddress;
 import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddressHistory;
 import me.aaronakhtar.blockonomics_wrapper.objects.transaction.TransactionInformation;
 
 import java.util.HashMap;
-import java.util.StringJoiner;
 
-@SuppressWarnings("Duplicates")
 public class Blockonomics {
-    protected static final String blockonomicsApi = "https://www.blockonomics.co/api/";
-    protected static String apiKey = null;
 
-    public static void setApiKey(String apiKey) {
-        Blockonomics.apiKey = apiKey;
+    private String apiKey;
+    public Blockonomics(String apiKey) {
+        this.apiKey = apiKey;
     }
 
     /***
@@ -27,8 +25,8 @@ public class Blockonomics {
      * @param currency_code the target fiat currency to check the price on.
      * @return price of bitcoin in the target fiat currency.
      */
-    public static double getBitcoinPrice(String currency_code){
-        final JsonObject jsonObject = Web.makeRequest("price?currency=" + currency_code.toUpperCase(), new HashMap<>(), false);
+    public double getBitcoinPrice(String currency_code){
+        final JsonObject jsonObject = Web.makeRequest("price?currency=" + currency_code.toUpperCase(), new HashMap<>(), false, this);
         return Double.parseDouble(jsonObject.get("price").toString());
     }
 
@@ -43,8 +41,8 @@ public class Blockonomics {
      * @param reset if set to true the function will return the last generated address.
      * @return Bitcoin Address in String Object.
      */
-    public static String newAddress(boolean reset){
-        final JsonObject jsonObject = Web.makeRequest(((reset == true) ? "new_address?reset=1" : "new_address"), "", true);
+    public String newAddress(boolean reset){
+        final JsonObject jsonObject = Web.makeRequest(((reset) ? "new_address?reset=1" : "new_address"), "", true, this);
         return jsonObject.get("address").toString().replaceAll("\"", "");
     }
 
@@ -58,8 +56,8 @@ public class Blockonomics {
      * @param account the xpub of the target account to generate address on.
      * @return BitcoinAddressAccount objecting containing the generated address and the corresponding account.
      */
-    public static BitcoinAddress.BitcoinAddressAccount newAddress(String account){
-        final JsonObject jsonObject = Web.makeRequest("new_address?match_account=" + account, "", true);
+    public BitcoinAddress.BitcoinAddressAccount newAddress(String account){
+        final JsonObject jsonObject = Web.makeRequest("new_address?match_account=" + account, "", true, this);
         return Web.gson.fromJson(jsonObject, BitcoinAddress.BitcoinAddressAccount.class);
     }
 
@@ -73,17 +71,11 @@ public class Blockonomics {
      * status . Status codes: 0 - Unconfirmed, 1 - Partially Confirmed.
      * """ - 'https://www.blockonomics.co/views/api.html#history'
      *
-     * @param targets Target Bitcoin Addresses.
+     * @param targetBitcoinAddresses Target Bitcoin Addresses.
      * @return BitcoinAddressHistory object.
      */
-    public static BitcoinAddressHistory getBitcoinAddressHistory(String[] targets){
-        if (targets == null || targets.length == 0) return null;
-        StringJoiner stringJoiner = new StringJoiner(" ");
-        for (String t : targets){
-            if (t == null || t.isEmpty()) continue;
-            stringJoiner.add(t);
-        }
-        final JsonObject jsonObject = Web.makeRequest("searchhistory", "{\"addr\":\""+stringJoiner.toString()+"\"}", true);
+    public BitcoinAddressHistory getBitcoinAddressHistory(BitcoinAddress[] targetBitcoinAddresses) throws BlockonomicsException{
+        final JsonObject jsonObject = Web.makeRequest("searchhistory", BlockonomicsUtilities.addressArrayToJson(targetBitcoinAddresses, " "), true, this);
         return Web.gson.fromJson(jsonObject, BitcoinAddressHistory.class);
     }
 
@@ -94,15 +86,11 @@ public class Blockonomics {
      * """ - 'https://www.blockonomics.co/views/api.html#txreceipt'
      *
      * @param txid Target Transaction ID.
-     * @param addresses Target Bitcoin Addresses.
+     * @param targetBitcoinAddresses Target Bitcoin Addresses.
      * @return Receipt URL.
      */
-    public static String getTransactionReceiptUrl(String txid, String[] addresses){
-        StringJoiner joiner = new StringJoiner(",");
-        for (String s : addresses){
-            joiner.add(s);
-        }
-        return blockonomicsApi + "tx?txid="+txid+"&addr=" + joiner.toString();
+    public String getTransactionReceiptUrl(String txid, BitcoinAddress[] targetBitcoinAddresses) throws BlockonomicsException {
+        return Web.blockonomicsApi + "tx?txid="+txid+"&addr=" + BlockonomicsUtilities.addressArrayToJson(targetBitcoinAddresses, ",");
     }
 
     /***
@@ -117,8 +105,8 @@ public class Blockonomics {
      * @param txid Target Transaction ID.
      * @return TransactionInformation object.
      */
-    public static TransactionInformation getTransactionInformation(String txid){
-        final JsonObject json = Web.makeRequest("tx_detail", new HashMap<String, String>(){{put("txid", txid);}}, false);
+    public TransactionInformation getTransactionInformation(String txid){
+        final JsonObject json = Web.makeRequest("tx_detail", new HashMap<String, String>(){{put("txid", txid);}}, false, this);
         return Web.gson.fromJson(json, TransactionInformation.class);
     }
 
@@ -128,19 +116,20 @@ public class Blockonomics {
      * """ - 'https://www.blockonomics.co/views/api.html#balance'
      * Returns JsonObject for the returned Json String from blockonomics.
      *
-     * @param targets Targets you want the balance of ('xpub' or 'address' types).
+     * @param targetBitcoinAddresses Targets you want the balance of ('xpub' or 'address' types).
      * @return BitcoinAddress array.
      */
-    public BitcoinAddress[] getBalance(String[] targets){
-        if (targets == null || targets.length == 0) return null;
-        //{"addr": <Whitespace seperated list of bitcoin addresses/xpubs>}
-        StringJoiner stringJoiner = new StringJoiner(" ");
-        for (String t : targets){
-            if (t == null || t.isEmpty()) continue;
-            stringJoiner.add(t);
-        }
-        final JsonObject jsonObject = Web.makeRequest("balance", "{\"addr\":\""+stringJoiner.toString()+"\"}", true);
+    public BitcoinAddress[] getBalance(BitcoinAddress[] targetBitcoinAddresses) throws BlockonomicsException {
+        final JsonObject jsonObject = Web.makeRequest("balance", BlockonomicsUtilities.addressArrayToJson(targetBitcoinAddresses, " "), true, this);
         return Web.gson.fromJson(jsonObject.get("response"), BitcoinAddress[].class);
+    }
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
+    public String getApiKey() {
+        return apiKey;
     }
 
 }

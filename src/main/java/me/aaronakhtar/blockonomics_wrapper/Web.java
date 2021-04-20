@@ -3,7 +3,6 @@ package me.aaronakhtar.blockonomics_wrapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.sun.istack.internal.Nullable;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -16,6 +15,7 @@ import java.util.StringJoiner;
 
 @SuppressWarnings("Duplicates")
 public class Web {
+    protected static final String blockonomicsApi = "https://www.blockonomics.co/api/";
 
     private Web(){}
 
@@ -23,11 +23,11 @@ public class Web {
     private static final JsonParser jsonParser = new JsonParser();
 
             // POST
-    protected static JsonObject makeRequest(String target, String body, boolean authRequired) {
+    public static JsonObject makeRequest(String target, String body, boolean authRequired, Blockonomics apiInstance) {
         try {
-            HttpURLConnection connection = (HttpURLConnection) new URL(Blockonomics.blockonomicsApi + target).openConnection();
+            HttpURLConnection connection = (HttpURLConnection) new URL(blockonomicsApi + target).openConnection();
             try (AutoCloseable autoCloseable = () -> connection.disconnect()) {
-                if (authRequired) connection.setRequestProperty("Authorization", "Bearer " + Blockonomics.apiKey);
+                if (authRequired) connection.setRequestProperty("Authorization", "Bearer " + apiInstance.getApiKey());
                 connection.addRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0");
                 connection.setRequestProperty("Content-Type", "application/json; utf-8");
                 connection.setRequestMethod("POST");
@@ -49,7 +49,7 @@ public class Web {
     }
 
             // GET
-    protected static JsonObject makeRequest(String target, HashMap<String, String> parameters, boolean authRequired) {
+    protected static JsonObject makeRequest(String target, HashMap<String, String> parameters, boolean authRequired, Blockonomics apiInstance) {
         try {
             HttpURLConnection connection;
             if (!parameters.isEmpty()) {
@@ -58,12 +58,12 @@ public class Web {
                 for (Map.Entry<String, String> param : parameters.entrySet()) {
                     joiner.add(param.getKey() + "=" + param.getValue());
                 }
-                connection = (HttpURLConnection) new URL(Blockonomics.blockonomicsApi + target + "?" + joiner.toString()).openConnection();
+                connection = (HttpURLConnection) new URL(blockonomicsApi + target + "?" + joiner.toString()).openConnection();
             }else{
-                connection = (HttpURLConnection) new URL(Blockonomics.blockonomicsApi + target).openConnection();
+                connection = (HttpURLConnection) new URL(blockonomicsApi + target).openConnection();
             }
             try (AutoCloseable autoCloseable = () -> connection.disconnect()) {
-                if (authRequired) connection.setRequestProperty("Authorization", "Bearer " + Blockonomics.apiKey);
+                if (authRequired) connection.setRequestProperty("Authorization", "Bearer " + apiInstance.getApiKey());
                 connection.addRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0");
                 connection.setRequestMethod("GET");
                 StringBuilder stringBuilder = new StringBuilder();

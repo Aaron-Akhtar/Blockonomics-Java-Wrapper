@@ -4,25 +4,28 @@ This is a Java Wrapper of the Blockonomics RESTful API https://www.blockonomics.
 Example:
 
 ```java
+package me.aaronakhtar.blockonomics_wrapper;
+
+import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddress;
 import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddressHistory;
 import me.aaronakhtar.blockonomics_wrapper.objects.transaction.ConfirmedTransaction;
 import me.aaronakhtar.blockonomics_wrapper.objects.transaction.PendingTransaction;
 
 import java.util.Arrays;
 
-public class T1 {
+public class Test {
 
-    public static void main(String[] args) {
-        Blockonomics.setApiKey("API KEY");
+    public static void main(String[] args) throws Exception {
+        final Blockonomics blockonomics = new Blockonomics("API_KEY");
 
-        BitcoinAddressHistory bitcoinAddressHistory = Blockonomics.getBitcoinAddressHistory(new String[]{"1JJ5taVeiHcD6DXNkLLfocbHcE9Nzio1qV"});
+        BitcoinAddressHistory bitcoinAddressHistory = blockonomics.getBitcoinAddressHistory(new BitcoinAddress[]{new BitcoinAddress("1FnQjXQc8F6jyjF8L92yLpnMhSWpw8t8jo")});
         for (ConfirmedTransaction confirmedTransaction : bitcoinAddressHistory.getHistory()){
             System.out.println(Arrays.toString(confirmedTransaction.getAddr()));
             System.out.println(confirmedTransaction.getTime());
             System.out.println(confirmedTransaction.getTxid());
             System.out.println(confirmedTransaction.getValue());
         }
-        
+
         for (PendingTransaction pendingTransaction : bitcoinAddressHistory.getPendingTransactions()){
             System.out.println(Arrays.toString(pendingTransaction.getAddr()));
             System.out.println(pendingTransaction.getTime());
@@ -31,4 +34,6 @@ public class T1 {
             System.out.println(pendingTransaction.getStatus());
         }
     }
+
+}
 ```
