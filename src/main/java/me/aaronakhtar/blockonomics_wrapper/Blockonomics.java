@@ -25,8 +25,8 @@ public class Blockonomics {
      * @param currency_code the target fiat currency to check the price on.
      * @return price of bitcoin in the target fiat currency.
      */
-    public double getBitcoinPrice(String currency_code){
-        final JsonObject jsonObject = Web.makeRequest("price?currency=" + currency_code.toUpperCase(), new HashMap<>(), false, this);
+    public static double getBitcoinPrice(String currency_code){
+        final JsonObject jsonObject = Web.makeRequest("price?currency=" + currency_code.toUpperCase(), new HashMap<>(), false, null);
         return Double.parseDouble(jsonObject.get("price").toString());
     }
 
@@ -105,8 +105,8 @@ public class Blockonomics {
      * @param txid Target Transaction ID.
      * @return TransactionInformation object.
      */
-    public TransactionInformation getTransactionInformation(String txid){
-        final JsonObject json = Web.makeRequest("tx_detail", new HashMap<String, String>(){{put("txid", txid);}}, false, this);
+    public static TransactionInformation getTransactionInformation(String txid){
+        final JsonObject json = Web.makeRequest("tx_detail", new HashMap<String, String>(){{put("txid", txid);}}, false, null);
         return Web.gson.fromJson(json, TransactionInformation.class);
     }
 
