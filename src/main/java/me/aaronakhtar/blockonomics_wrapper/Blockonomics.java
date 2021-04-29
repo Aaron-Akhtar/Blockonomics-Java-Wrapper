@@ -89,7 +89,7 @@ public class Blockonomics {
      * @param targetBitcoinAddresses Target Bitcoin Addresses.
      * @return Receipt URL.
      */
-    public String getTransactionReceiptUrl(String txid, BitcoinAddress[] targetBitcoinAddresses) throws BlockonomicsException {
+    public static String getTransactionReceiptUrl(String txid, BitcoinAddress[] targetBitcoinAddresses) throws BlockonomicsException {
         return Web.blockonomicsApi + "tx?txid="+txid+"&addr=" + BlockonomicsUtilities.addressArrayToJson(targetBitcoinAddresses, ",");
     }
 
