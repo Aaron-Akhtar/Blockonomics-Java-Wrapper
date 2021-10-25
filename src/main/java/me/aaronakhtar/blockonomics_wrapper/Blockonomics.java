@@ -5,11 +5,12 @@ import me.aaronakhtar.blockonomics_wrapper.exceptions.BlockonomicsException;
 import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddress;
 import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddressHistory;
 import me.aaronakhtar.blockonomics_wrapper.objects.transaction.TransactionInformation;
+import me.aaronakhtar.blockonomics_wrapper.objects.wallet_watcher.MonitoredAddress;
 
 import java.util.HashMap;
 
 public class Blockonomics {
-
+    protected String lastJsonResponse = "";
     private String apiKey;
     public Blockonomics(String apiKey) {
         this.apiKey = apiKey;
@@ -28,6 +29,48 @@ public class Blockonomics {
     public static double getBitcoinPrice(String currency_code){
         final JsonObject jsonObject = Web.makeRequest("price?currency=" + currency_code.toUpperCase(), new HashMap<>(), false, null);
         return Double.parseDouble(jsonObject.get("price").toString());
+    }
+    /***
+     * <P>WALLET WATCHER FUNCTION</P>
+     *
+     * <P>Use this function to insert a new bitcoin address to monitor or
+     * modify one that already exists.</P>
+     *
+     * @param address target Bitcoin Address to modify/create.
+     * @param tag new tag for the target Bitcoin Address.
+     * @return boolean.
+     */
+    public boolean modifyMonitoringAddress(String address, String tag){
+        Web.makeRequest("address", "{\"addr\":\""+address+"\", \"tag\":\""+tag+"\"}", true, this);
+        return true;
+    }
+
+    /***
+     * <P>WALLET WATCHER FUNCTION</P>
+     *
+     * <P>Use this function to delete an existing Bitcoin Address from your
+     * wallet watcher.</P>
+     *
+     * @param address target Bitcoin Address to delete.
+     * @return boolean.
+     */
+    public boolean deleteMonitoringAddress(String address){
+        Web.makeRequest("delete_address", "{\"addr\":\""+address+"\"}", true, this);
+        return true;
+    }
+
+    /***
+     * <P>WALLET WATCHER FUNCTION</P>
+     *
+     * <P>Use this function to get all monitoring addresses.</P>
+     *
+     * @return MonitoredAddress object array.
+     */
+    public MonitoredAddress[] getMonitoringAddresses(){
+        try {
+            Web.makeRequest("address", new HashMap<>(), true, this);
+        }catch (IllegalStateException e){}
+        return Web.gson.fromJson(lastJsonResponse, MonitoredAddress[].class);
     }
 
     /***
