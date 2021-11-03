@@ -1,20 +1,64 @@
 package me.aaronakhtar.blockonomics_wrapper;
 
 import com.google.gson.JsonObject;
+import com.sun.net.httpserver.HttpServer;
 import me.aaronakhtar.blockonomics_wrapper.exceptions.BlockonomicsException;
 import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddress;
 import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddressHistory;
+import me.aaronakhtar.blockonomics_wrapper.objects.BlockonomicsCallbackSettings;
 import me.aaronakhtar.blockonomics_wrapper.objects.transaction.TransactionInformation;
 import me.aaronakhtar.blockonomics_wrapper.objects.wallet_watcher.MonitoredAddress;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 
 public class Blockonomics {
+    private static boolean isCallbackServerOnline = false;
+    private static HttpServer callbackServer = null;
     protected String lastJsonResponse = "";
     private String apiKey;
     public Blockonomics(String apiKey) {
         this.apiKey = apiKey;
     }
+
+    public BlockonomicsCallbackSettings getCallbackSettings(String context, String secretKey){
+        return new BlockonomicsCallbackSettings(this, context, secretKey);
+    }
+
+    public static synchronized void startCallbackServer(BlockonomicsCallbackSettings[] blockonomicsCallbackSettings, int port) throws IOException, BlockonomicsException {
+        if (isCallbackServerOnline){
+            throw new BlockonomicsException("Please execute 'stopCallbackServer()' method before attempting to start a new callback server.");
+        }
+
+        try {
+            final HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+            final BlockonomicsCallbackSettings[] callbackSettings = blockonomicsCallbackSettings;
+            for (BlockonomicsCallbackSettings bcs : callbackSettings){
+                server.createContext(bcs.getContext()); // todo: add dynamic handler functionality
+            }
+            server.start();
+            callbackServer = server;
+            isCallbackServerOnline = true;
+
+        }catch (IOException e){
+
+        }
+
+    }
+
+    public static synchronized void stopCallbackServer() throws BlockonomicsException {
+        if (!isCallbackServerOnline){
+            throw new BlockonomicsException("Please execute 'startCallbackServer()' method before attempting to stop the running callback server.");
+        }
+        callbackServer.stop(0);
+        isCallbackServerOnline = false;
+    }
+
+
+
+
+
 
     /***
      * """
@@ -165,6 +209,14 @@ public class Blockonomics {
     public BitcoinAddress[] getBalance(BitcoinAddress[] targetBitcoinAddresses) throws BlockonomicsException {
         final JsonObject jsonObject = Web.makeRequest("balance", BlockonomicsUtilities.addressArrayToJson(targetBitcoinAddresses, " "), true, this);
         return Web.gson.fromJson(jsonObject.get("response"), BitcoinAddress[].class);
+    }
+
+    public static boolean isIsCallbackServerOnline() {
+        return isCallbackServerOnline;
+    }
+
+    public static HttpServer getCallbackServer() {
+        return callbackServer;
     }
 
     public void setApiKey(String apiKey) {
