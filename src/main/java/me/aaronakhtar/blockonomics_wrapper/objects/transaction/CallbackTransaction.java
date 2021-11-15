@@ -4,10 +4,6 @@ import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddress;
 
 public class CallbackTransaction {
 
-    // status enum is inner due to the fact
-    // it likely won't be used elsewhere.
-
-
     private TransactionStatus status;
     private BitcoinAddress address;
     private long amount; // satoshi
