@@ -8,6 +8,7 @@ import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddressHistory;
 import me.aaronakhtar.blockonomics_wrapper.objects.BlockonomicsCallbackSettings;
 import me.aaronakhtar.blockonomics_wrapper.objects.transaction.TransactionInformation;
 import me.aaronakhtar.blockonomics_wrapper.objects.wallet_watcher.MonitoredAddress;
+import me.aaronakhtar.blockonomics_wrapper.threads.CallbackRequestHandler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -35,7 +36,7 @@ public class Blockonomics {
             final HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
             final BlockonomicsCallbackSettings[] callbackSettings = blockonomicsCallbackSettings;
             for (BlockonomicsCallbackSettings bcs : callbackSettings){
-                server.createContext(bcs.getContext()); // todo: add dynamic handler functionality
+                server.createContext(bcs.getContext(), new CallbackRequestHandler(bcs.getBlockonomicsInstance(), bcs));
             }
             server.start();
             callbackServer = server;
