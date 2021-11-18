@@ -46,9 +46,6 @@ public class CallbackRequestHandler implements HttpHandler {
         if ((secretKey != null && secretKey.equals(blockonomicsCallbackSettings.getSecretKey()))
                     && status != null && address != null && value != null && transactionId != null){
 
-            System.out.println(1);
-
-            // more testing and debugging needed - also further integration needed
 
 
             // rbf check: (rbf != null && rbf.equals("1"))  - will be used later

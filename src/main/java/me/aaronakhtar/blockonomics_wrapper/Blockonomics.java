@@ -6,6 +6,8 @@ import me.aaronakhtar.blockonomics_wrapper.exceptions.BlockonomicsException;
 import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddress;
 import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddressHistory;
 import me.aaronakhtar.blockonomics_wrapper.objects.BlockonomicsCallbackSettings;
+import me.aaronakhtar.blockonomics_wrapper.objects.transaction.CallbackTransaction;
+import me.aaronakhtar.blockonomics_wrapper.objects.transaction.ConfirmedTransaction;
 import me.aaronakhtar.blockonomics_wrapper.objects.transaction.TransactionInformation;
 import me.aaronakhtar.blockonomics_wrapper.objects.wallet_watcher.MonitoredAddress;
 import me.aaronakhtar.blockonomics_wrapper.threads.CallbackRequestHandler;
@@ -56,8 +58,19 @@ public class Blockonomics {
         isCallbackServerOnline = false;
     }
 
+    public volatile boolean processingTransaction = false;
+    public volatile CallbackTransaction lastTransaction = null;
+    public CallbackTransaction lastListenedTransaction = null;
 
-
+    // an alternative method to handling transactions like this could be a LOCAL SOCKET to allow for better communication between threads, however this felt like a less intrusive way of doing things.
+    public CallbackTransaction listenForNewTransaction(){
+        while(lastTransaction == null);
+        processingTransaction = true;
+        if (lastListenedTransaction != null && lastListenedTransaction.getNoticedDate().equalsIgnoreCase(lastTransaction.getNoticedDate())) return null;
+        lastListenedTransaction = lastTransaction;
+        if (processingTransaction) processingTransaction = false;
+        return lastTransaction;
+    }
 
 
 
