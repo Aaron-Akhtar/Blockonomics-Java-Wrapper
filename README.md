@@ -9,7 +9,7 @@ An Example Link:
 ```
 http://1.2.3.4:8080/api1?secret=myRandomSecretKey
 ```
-_**Be sure to place said key in your blockonomics merchant store.**_
+_**Be sure to place said link in your blockonomics merchant store.**_
 https://www.blockonomics.co/merchants#/stores
 
 
