@@ -30,7 +30,7 @@ public class Blockonomics {
         this.apiKey = apiKey;
     }
 
-    public URL getCallbackUrl() throws BlockonomicsException, MalformedURLException {
+    public URL getCallbackHost() throws BlockonomicsException, MalformedURLException {
         if (!isCallbackServerOnline) throw new BlockonomicsException("Please execute 'startCallbackServer()' method before attempting to fetch the callback URL.");
         final InetSocketAddress inetSocketAddress = callbackServer.getAddress();
         String hostAddress = inetSocketAddress.getAddress().getHostAddress();
@@ -47,7 +47,7 @@ public class Blockonomics {
     public void sendTestPaymentToCallback(BlockonomicsCallbackSettings callbackSettings, TransactionStatus paymentStatus, String bitcoinAddress, double bitcoinAmount, boolean replaceByFee){
         try{
             final URL url = new URL(
-                    getCallbackUrl().toString() + callbackSettings.getContext() +
+                    getCallbackHost().toString() + callbackSettings.getContext() +
                             "?status="+paymentStatus.getI()+
                             "&addr=" + bitcoinAddress +
                             "&value="+BlockonomicsUtilities.bitcoinToSatoshi(bitcoinAmount)+
