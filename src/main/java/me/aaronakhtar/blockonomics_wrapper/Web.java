@@ -16,9 +16,7 @@ import java.util.StringJoiner;
 @SuppressWarnings("Duplicates")
 public class Web {
     protected static final String blockonomicsApi = "https://www.blockonomics.co/api/";
-    private static final String userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0";
-
-    private Web(){}
+    protected static final String userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0";
 
     public static final Gson gson = new Gson();
     private static final JsonParser jsonParser = new JsonParser();
@@ -67,7 +65,7 @@ public class Web {
                 if (authRequired) connection.setRequestProperty("Authorization", "Bearer " + apiInstance.getApiKey());
                 connection.addRequestProperty("User-Agent", userAgent);
                 connection.setRequestMethod("GET");
-                StringBuilder stringBuilder = new StringBuilder();
+                final StringBuilder stringBuilder = new StringBuilder();
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                     String i;
                     while ((i = reader.readLine()) != null) {

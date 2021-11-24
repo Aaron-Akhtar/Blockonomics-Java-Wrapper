@@ -9,11 +9,16 @@ import me.aaronakhtar.blockonomics_wrapper.objects.BlockonomicsCallbackSettings;
 import me.aaronakhtar.blockonomics_wrapper.objects.transaction.CallbackTransaction;
 import me.aaronakhtar.blockonomics_wrapper.objects.transaction.ConfirmedTransaction;
 import me.aaronakhtar.blockonomics_wrapper.objects.transaction.TransactionInformation;
+import me.aaronakhtar.blockonomics_wrapper.objects.transaction.TransactionStatus;
 import me.aaronakhtar.blockonomics_wrapper.objects.wallet_watcher.MonitoredAddress;
 import me.aaronakhtar.blockonomics_wrapper.threads.CallbackRequestHandler;
+import sun.security.ssl.HandshakeOutStream;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 
 public class Blockonomics {
@@ -25,8 +30,43 @@ public class Blockonomics {
         this.apiKey = apiKey;
     }
 
+    public URL getCallbackUrl() throws BlockonomicsException, MalformedURLException {
+        if (!isCallbackServerOnline) throw new BlockonomicsException("Please execute 'startCallbackServer()' method before attempting to fetch the callback URL.");
+        final InetSocketAddress inetSocketAddress = callbackServer.getAddress();
+        String hostAddress = inetSocketAddress.getAddress().getHostAddress();
+        if (hostAddress.split(".").length != 4) hostAddress = "127.0.0.1";
+
+        return new URL("http://" + hostAddress + ":" + inetSocketAddress.getPort());
+    }
+
     public BlockonomicsCallbackSettings getCallbackSettings(String context, String secretKey){
         return new BlockonomicsCallbackSettings(this, context, secretKey);
+    }
+
+    // todo - test
+    public void sendTestPaymentToCallback(BlockonomicsCallbackSettings callbackSettings, TransactionStatus paymentStatus, String bitcoinAddress, double bitcoinAmount, boolean replaceByFee){
+        try{
+            final URL url = new URL(
+                    getCallbackUrl().toString() + callbackSettings.getContext() +
+                            "?status="+paymentStatus.getI()+
+                            "&addr=" + bitcoinAddress +
+                            "&value="+BlockonomicsUtilities.bitcoinToSatoshi(bitcoinAmount)+
+                            "&txid=THIS-IS-NOT-A-REAL-PAYMENT" +
+                            "&rbf=" + ((replaceByFee) ? 1 : 0) +
+                            "&secret=" + callbackSettings.getSecretKey());
+
+            System.out.println(url.toString());
+
+            final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            try(AutoCloseable autoCloseable = () -> connection.disconnect()){
+                connection.setConnectTimeout(10000);
+                connection.addRequestProperty("User-Agent", Web.userAgent);
+                connection.setRequestMethod("GET");
+                connection.getResponseCode(); // wait for request to complete.
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     public static synchronized void startCallbackServer(BlockonomicsCallbackSettings[] blockonomicsCallbackSettings, int port) throws IOException, BlockonomicsException {
@@ -45,7 +85,7 @@ public class Blockonomics {
             isCallbackServerOnline = true;
 
         }catch (IOException e){
-
+            e.printStackTrace();
         }
 
     }
@@ -58,17 +98,23 @@ public class Blockonomics {
         isCallbackServerOnline = false;
     }
 
-    public volatile boolean processingTransaction = false;
+    //public volatile boolean processingTransaction = false;
     public volatile CallbackTransaction lastTransaction = null;
-    public CallbackTransaction lastListenedTransaction = null;
-
+    public volatile CallbackTransaction lastListenedTransaction = null;
     // an alternative method to handling transactions like this could be a LOCAL SOCKET to allow for better communication between threads, however this felt like a less intrusive way of doing things.
     public CallbackTransaction listenForNewTransaction(){
-        while(lastTransaction == null);
-        processingTransaction = true;
-        if (lastListenedTransaction != null && lastListenedTransaction.getNoticedDate().equalsIgnoreCase(lastTransaction.getNoticedDate())) return null;
+                                                                // if nothing happens in 5 seconds it returns null.
+        final long stopWaitingTime = System.currentTimeMillis() + (5 * 1000);
+        while(lastTransaction == null ||
+                (lastListenedTransaction != null && lastListenedTransaction.getNoticedDate().equalsIgnoreCase(lastTransaction.getNoticedDate()) && lastListenedTransaction.getAddress().getAddress().equals(lastTransaction.getAddress().getAddress()))){
+
+            if (System.currentTimeMillis() > stopWaitingTime) return null;
+
+
+        }
+       // processingTransaction = true;
         lastListenedTransaction = lastTransaction;
-        if (processingTransaction) processingTransaction = false;
+      //  if (processingTransaction) processingTransaction = false;
         return lastTransaction;
     }
 

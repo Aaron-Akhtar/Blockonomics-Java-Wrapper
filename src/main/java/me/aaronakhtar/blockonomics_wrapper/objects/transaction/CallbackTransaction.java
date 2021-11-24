@@ -7,7 +7,7 @@ import java.util.Date;
 
 public class CallbackTransaction {
 
-    private static final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    public static final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
     private TransactionStatus status;
     private BitcoinAddress address;

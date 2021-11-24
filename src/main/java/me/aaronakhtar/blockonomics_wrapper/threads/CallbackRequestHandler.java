@@ -3,7 +3,11 @@ package me.aaronakhtar.blockonomics_wrapper.threads;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import me.aaronakhtar.blockonomics_wrapper.Blockonomics;
+import me.aaronakhtar.blockonomics_wrapper.exceptions.BlockonomicsException;
+import me.aaronakhtar.blockonomics_wrapper.objects.BitcoinAddress;
 import me.aaronakhtar.blockonomics_wrapper.objects.BlockonomicsCallbackSettings;
+import me.aaronakhtar.blockonomics_wrapper.objects.transaction.CallbackTransaction;
+import me.aaronakhtar.blockonomics_wrapper.objects.transaction.TransactionStatus;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -21,9 +25,18 @@ public class CallbackRequestHandler implements HttpHandler {
         this.blockonomicsCallbackSettings = blockonomicsCallbackSettings;
     }
 
+    private static synchronized void setLastTransaction(CallbackTransaction transaction, Blockonomics instance){
+        instance.lastTransaction = transaction;
+        try{
+            Thread.sleep(500);
+        }catch (Exception e){}
+    }
+
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         if (!httpExchange.getRequestMethod().equalsIgnoreCase("get")) return;
+
+
 
         // converting get parameters to hashmap.
         final String[] query = httpExchange.getRequestURI().getQuery().split("&");
@@ -46,9 +59,28 @@ public class CallbackRequestHandler implements HttpHandler {
         if ((secretKey != null && secretKey.equals(blockonomicsCallbackSettings.getSecretKey()))
                     && status != null && address != null && value != null && transactionId != null){
 
+            final TransactionStatus[] statuses = TransactionStatus.values();
+            TransactionStatus transactionStatus = null;
+            for (TransactionStatus ts : statuses){
+                if (ts.getI() == Integer.parseInt(status)){
+                    transactionStatus = ts;
+                    break;
+                }
+            }
+            if (transactionStatus == null) return;
 
+            final BitcoinAddress bitcoinAddress = new BitcoinAddress(address);
+            try {
+                bitcoinAddress.updateObject(instance);
+            } catch (BlockonomicsException e) {
+                e.printStackTrace();
+            }
 
-            // rbf check: (rbf != null && rbf.equals("1"))  - will be used later
+            setLastTransaction(
+                    new CallbackTransaction(transactionStatus, bitcoinAddress, Long.parseLong(value), transactionId, (rbf != null && rbf.equals("1"))),
+                    instance);
+
+            httpExchange.sendResponseHeaders(200, 0);
 
         }
 
