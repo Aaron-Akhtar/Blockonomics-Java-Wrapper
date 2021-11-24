@@ -55,8 +55,6 @@ public class Blockonomics {
                             "&rbf=" + ((replaceByFee) ? 1 : 0) +
                             "&secret=" + callbackSettings.getSecretKey());
 
-            System.out.println(url.toString());
-
             final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             try(AutoCloseable autoCloseable = () -> connection.disconnect()){
                 connection.setConnectTimeout(10000);
