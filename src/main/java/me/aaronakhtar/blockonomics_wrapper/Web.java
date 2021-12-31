@@ -16,8 +16,7 @@ import java.util.StringJoiner;
 @SuppressWarnings("Duplicates")
 public class Web {
     protected static final String blockonomicsApi = "https://www.blockonomics.co/api/";
-
-    private Web(){}
+    protected static final String userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0";
 
     public static final Gson gson = new Gson();
     private static final JsonParser jsonParser = new JsonParser();
@@ -25,21 +24,22 @@ public class Web {
             // POST
     public static JsonObject makeRequest(String target, String body, boolean authRequired, Blockonomics apiInstance) {
         try {
-            HttpURLConnection connection = (HttpURLConnection) new URL(blockonomicsApi + target).openConnection();
+            final HttpURLConnection connection = (HttpURLConnection) new URL(blockonomicsApi + target).openConnection();
             try (AutoCloseable autoCloseable = () -> connection.disconnect()) {
                 if (authRequired) connection.setRequestProperty("Authorization", "Bearer " + apiInstance.getApiKey());
-                connection.addRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0");
+                connection.addRequestProperty("User-Agent", userAgent);
                 connection.setRequestProperty("Content-Type", "application/json; utf-8");
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);
                 if (body.length() != 0) connection.getOutputStream().write(body.getBytes(StandardCharsets.UTF_8));
-                StringBuilder stringBuilder = new StringBuilder();
+                final StringBuilder stringBuilder = new StringBuilder();
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                     String i;
                     while ((i = reader.readLine()) != null) {
                         stringBuilder.append(i);
                     }
                 }
+                if (stringBuilder.length() == 0) stringBuilder.append("{addr:0}");  // null replacement
                 return jsonParser.parse(stringBuilder.toString()).getAsJsonObject();
             }
         } catch (Exception e) {
@@ -53,7 +53,6 @@ public class Web {
         try {
             HttpURLConnection connection;
             if (!parameters.isEmpty()) {
-                // i am using stringjoiner rather than just adding directly to stop garbage from being produced during compilation.
                 StringJoiner joiner = new StringJoiner("&");
                 for (Map.Entry<String, String> param : parameters.entrySet()) {
                     joiner.add(param.getKey() + "=" + param.getValue());
@@ -64,18 +63,23 @@ public class Web {
             }
             try (AutoCloseable autoCloseable = () -> connection.disconnect()) {
                 if (authRequired) connection.setRequestProperty("Authorization", "Bearer " + apiInstance.getApiKey());
-                connection.addRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0");
+                connection.addRequestProperty("User-Agent", userAgent);
                 connection.setRequestMethod("GET");
-                StringBuilder stringBuilder = new StringBuilder();
+                final StringBuilder stringBuilder = new StringBuilder();
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                     String i;
                     while ((i = reader.readLine()) != null) {
                         stringBuilder.append(i);
                     }
                 }
-                return jsonParser.parse(stringBuilder.toString()).getAsJsonObject();
+                final String res = stringBuilder.toString();
+                if(apiInstance != null) {
+                    apiInstance.lastJsonResponse = res;
+                }
+                return jsonParser.parse(res).getAsJsonObject();
             }
         } catch (Exception e) {
+            if (e instanceof IllegalStateException) return null;
             e.printStackTrace();
         }
         return null;
