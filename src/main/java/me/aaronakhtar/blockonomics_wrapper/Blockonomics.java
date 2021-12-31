@@ -30,24 +30,26 @@ public class Blockonomics {
         this.apiKey = apiKey;
     }
 
-    public URL getCallbackHost() throws BlockonomicsException, MalformedURLException {
+    public URL getCallbackURL() throws BlockonomicsException, MalformedURLException {
         if (!isCallbackServerOnline) throw new BlockonomicsException("Please execute 'startCallbackServer()' method before attempting to fetch the callback URL.");
         final InetSocketAddress inetSocketAddress = callbackServer.getAddress();
         String hostAddress = inetSocketAddress.getAddress().getHostAddress();
-        if (hostAddress.split(".").length != 4) hostAddress = "127.0.0.1";
-
+        if (hostAddress.split("\\.").length != 4 || hostAddress.contains(":")) hostAddress = "127.0.0.1";
         return new URL("http://" + hostAddress + ":" + inetSocketAddress.getPort());
+    }
+
+    public String getCallbackURL(BlockonomicsCallbackSettings callbackSettings) throws MalformedURLException, BlockonomicsException{
+        return this.getCallbackURL().toString() + callbackSettings.getContext() + "?secret=" + callbackSettings.getSecretKey();
     }
 
     public BlockonomicsCallbackSettings getCallbackSettings(String context, String secretKey){
         return new BlockonomicsCallbackSettings(this, context, secretKey);
     }
 
-    // todo - test
     public void sendTestPaymentToCallback(BlockonomicsCallbackSettings callbackSettings, TransactionStatus paymentStatus, String bitcoinAddress, double bitcoinAmount, boolean replaceByFee){
         try{
             final URL url = new URL(
-                    getCallbackHost().toString() + callbackSettings.getContext() +
+                    getCallbackURL().toString() + callbackSettings.getContext() +
                             "?status="+paymentStatus.getI()+
                             "&addr=" + bitcoinAddress +
                             "&value="+BlockonomicsUtilities.bitcoinToSatoshi(bitcoinAmount)+
@@ -96,7 +98,6 @@ public class Blockonomics {
         isCallbackServerOnline = false;
     }
 
-    //public volatile boolean processingTransaction = false;
     public volatile CallbackTransaction lastTransaction = null;
     public volatile CallbackTransaction lastListenedTransaction = null;
     // an alternative method to handling transactions like this could be a LOCAL SOCKET to allow for better communication between threads, however this felt like a less intrusive way of doing things.
@@ -106,13 +107,15 @@ public class Blockonomics {
         while(lastTransaction == null ||
                 (lastListenedTransaction != null && lastListenedTransaction.getNoticedDate().equalsIgnoreCase(lastTransaction.getNoticedDate()) && lastListenedTransaction.getAddress().getAddress().equals(lastTransaction.getAddress().getAddress()))){
 
-            if (System.currentTimeMillis() > stopWaitingTime) return null;
+            try {
+                if (System.currentTimeMillis() > stopWaitingTime) return null;
+                Thread.sleep(20);
+            }catch (InterruptedException e){
 
+            }
 
         }
-       // processingTransaction = true;
         lastListenedTransaction = lastTransaction;
-      //  if (processingTransaction) processingTransaction = false;
         return lastTransaction;
     }
 

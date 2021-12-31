@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>me.aaronakhtar.blockonomics_wrapper</groupId>
-    <artifactId>Blockonomics Java</artifactId>
+    <artifactId>Blockonomics-Wrapper</artifactId>
     <version>1.0</version>
 
     <properties>
